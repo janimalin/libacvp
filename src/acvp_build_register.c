@@ -2803,6 +2803,21 @@ static ACVP_RESULT acvp_build_kas_ffc_register_cap(ACVP_CTX *ctx,
                     case ACVP_KAS_FFC_FC:
                         json_object_set_value(pset_obj, "fc", set_val);
                         break;
+                    case ACVP_KAS_FFC_MODP_2048:
+                        json_object_set_value(pset_obj, "MODP-2048", set_val);
+                        break;
+                    case ACVP_KAS_FFC_MODP_3072:
+                        json_object_set_value(pset_obj, "MODP-3072", set_val);
+                        break;
+                    case ACVP_KAS_FFC_MODP_4096:
+                        json_object_set_value(pset_obj, "MODP-4096", set_val);
+                        break;
+                    case ACVP_KAS_FFC_MODP_6144:
+                        json_object_set_value(pset_obj, "MODP-6144", set_val);
+                        break;
+                    case ACVP_KAS_FFC_MODP_8192:
+                        json_object_set_value(pset_obj, "MODP-8192", set_val);
+                        break;
                     default:
                         ACVP_LOG_ERR("Unsupported KAS-FFC set %d", set);
                         return ACVP_INVALID_ARG;
@@ -2949,6 +2964,21 @@ static ACVP_RESULT acvp_build_kas_ffc_register_cap(ACVP_CTX *ctx,
                         break;
                     case ACVP_KAS_FFC_FC:
                         json_array_append_string(temp_arr, "FC");
+                        break;
+                    case ACVP_KAS_FFC_MODP_2048:
+                        json_array_append_string(temp_arr, "MODP-2048");
+                        break;
+                    case ACVP_KAS_FFC_MODP_3072:
+                        json_array_append_string(temp_arr, "MODP-3072");
+                        break;
+                    case ACVP_KAS_FFC_MODP_4096:
+                        json_array_append_string(temp_arr, "MODP-4096");
+                        break;
+                    case ACVP_KAS_FFC_MODP_6144:
+                        json_array_append_string(temp_arr, "MODP-6144");
+                        break;
+                    case ACVP_KAS_FFC_MODP_8192:
+                        json_array_append_string(temp_arr, "MODP-8192");
                         break;
                     default:
                         ACVP_LOG_ERR("Unsupported KAS-FFC sha param %d", genmeth->param);

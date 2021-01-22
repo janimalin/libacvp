@@ -911,8 +911,8 @@ ACVP_RESULT acvp_run_vectors_from_file(ACVP_CTX *ctx, const char *req_filename, 
         ctx->session_url = calloc(ACVP_ATTR_URL_MAX + 1, sizeof(char));
         strcpy_s(ctx->session_url, ACVP_ATTR_URL_MAX + 1, test_session_url);
     } else {
-        ACVP_LOG_WARN("Missing session URL, results will not be POSTed to server");
-        goto end;
+        ACVP_LOG_WARN("Missing session URL, results will not be POSTed to server. continuing.");
+        // goto end;
     }
 
     jwt = json_object_get_string(obj, "jwt");
@@ -920,8 +920,8 @@ ACVP_RESULT acvp_run_vectors_from_file(ACVP_CTX *ctx, const char *req_filename, 
         ctx->jwt_token = calloc(ACVP_JWT_TOKEN_MAX + 1, sizeof(char));
         strcpy_s(ctx->jwt_token, ACVP_JWT_TOKEN_MAX + 1, jwt);
     } else {
-        ACVP_LOG_WARN("Missing JWT, results will not be POSTed to server");
-        goto end;
+        ACVP_LOG_WARN("Missing JWT, results will not be POSTed to server. continuing.");
+        //goto end;
     }
 
     isSample = json_object_get_boolean(obj, "isSample");
@@ -937,8 +937,8 @@ ACVP_RESULT acvp_run_vectors_from_file(ACVP_CTX *ctx, const char *req_filename, 
         const char *vsid_url = json_array_get_string(vect_sets, i);
 
         if (!vsid_url) {
-            ACVP_LOG_WARN("No vsId URL, results will not be POSTed to server");
-            goto end;
+            ACVP_LOG_WARN("No vsId URL, results will not be POSTed to server. continuing.");
+            // goto end;
         }
 
         rv = acvp_append_vsid_url(ctx, vsid_url);

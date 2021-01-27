@@ -446,6 +446,22 @@ typedef enum acvp_ecdsa_secret_gen_mode {
     ACVP_ECDSA_SECRET_GEN_TEST_CAND
 } ACVP_ECDSA_SECRET_GEN_MODE;
 
+typedef enum acvp_fc_prime {
+    ACVP_FC_PRIME_START = 0,
+    ACVP_FC_PRIME_NONE,
+    ACVP_FC_PRIME_MODP_2048,
+    ACVP_FC_PRIME_MODP_3072,
+    ACVP_FC_PRIME_MODP_4096,
+    ACVP_FC_PRIME_MODP_6144,
+    ACVP_FC_PRIME_MODP_8192,
+    ACVP_FC_PRIME_FFDHE_2048,
+    ACVP_FC_PRIME_FFDHE_3072,
+    ACVP_FC_PRIME_FFDHE_4096,
+    ACVP_FC_PRIME_FFDHE_6144,
+    ACVP_FC_PRIME_FFDHE_8192,
+    ACVP_FC_PRIME_END
+} ACVP_FC_PRIME;
+
 typedef enum acvp_ec_curve {
     ACVP_EC_CURVE_START = 0,
     ACVP_EC_CURVE_P192,
@@ -1373,7 +1389,12 @@ typedef enum acvp_kas_ffc_param {
     ACVP_KAS_FFC_GEN_METH,
     ACVP_KAS_FFC_KDF,
     ACVP_KAS_FFC_FB,
-    ACVP_KAS_FFC_FC
+    ACVP_KAS_FFC_FC,
+    ACVP_KAS_FFC_MODP_2048,
+    ACVP_KAS_FFC_MODP_3072,
+    ACVP_KAS_FFC_MODP_4096,
+    ACVP_KAS_FFC_MODP_6144,
+    ACVP_KAS_FFC_MODP_8192
 } ACVP_KAS_FFC_PARAM;
 
 /*! @struct ACVP_KAS_FFC_ROLE */
@@ -1408,6 +1429,7 @@ typedef struct acvp_kas_ffc_tc_t {
     ACVP_KAS_FFC_TEST_TYPE test_type;
     ACVP_HASH_ALG md;
     ACVP_KAS_FFC_MODE mode;
+    unsigned char *generate_mode;
     unsigned char *p;
     unsigned char *q;
     unsigned char *g;

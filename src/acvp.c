@@ -954,13 +954,11 @@ ACVP_RESULT acvp_run_vectors_from_file(ACVP_CTX *ctx, const char *req_filename, 
     }
 
     vs_entry = ctx->vsid_url_list;
-    if (!vs_entry) {
-        goto end;
-    }
 
     while (obj) {
         if (!vs_entry) {
-            goto end;
+            ACVP_LOG_WARN("No entry URL, continuing.");
+            // goto end;
         }
         /* Process the kat vector(s) */
         rv  = acvp_dispatch_vector_set(ctx, obj);
@@ -1008,7 +1006,9 @@ ACVP_RESULT acvp_run_vectors_from_file(ACVP_CTX *ctx, const char *req_filename, 
         file_val = NULL;
         n++;
         obj = json_array_get_object(reg_array, n);
-        vs_entry = vs_entry->next;
+        if(vs_entry) {
+            vs_entry = vs_entry->next;
+        }
     }
     /* append the final ']' to make the JSON work */ 
     rv = acvp_json_serialize_to_file_pretty_a(NULL, rsp_filename);
@@ -1098,7 +1098,7 @@ ACVP_RESULT acvp_upload_vectors_from_file(ACVP_CTX *ctx, const char *rsp_filenam
         rv = ACVP_MALLOC_FAIL;
         goto end;
     }
-    
+
     isSample = json_object_get_boolean(obj, "isSample");
     if (json_object_has_value(obj, "isSample")) {
         ctx->is_sample = isSample;

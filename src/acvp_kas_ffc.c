@@ -28,6 +28,7 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
                                                JSON_Object *tc_rsp) {
     ACVP_RESULT rv = ACVP_SUCCESS;
     char *tmp = NULL;
+    int isHash = (stc->chash && stc->chashlen > 0);
 
     tmp = calloc(ACVP_KAS_FFC_STR_MAX + 1, sizeof(char));
     if (!tmp) {
@@ -56,13 +57,25 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
     }
     json_object_set_string(tc_rsp, "ephemeralPublicIut", tmp);
 
-    memzero_s(tmp, ACVP_KAS_FFC_STR_MAX);
-    rv = acvp_bin_to_hexstr(stc->chash, stc->chashlen, tmp, ACVP_KAS_FFC_STR_MAX);
-    if (rv != ACVP_SUCCESS) {
-        ACVP_LOG_ERR("hex conversion failure (Z)");
-        goto end;
+    if (isHash) {
+        memzero_s(tmp, ACVP_KAS_FFC_STR_MAX);
+        rv = acvp_bin_to_hexstr(stc->chash, stc->chashlen, tmp, ACVP_KAS_FFC_STR_MAX);
+        if (rv != ACVP_SUCCESS) {
+            ACVP_LOG_ERR("hex conversion failure (Z hash)");
+            goto end;
+        }
+        json_object_set_string(tc_rsp, "hashZ", tmp);
     }
-    json_object_set_string(tc_rsp, "hashZ", tmp);
+
+    if (stc->z && !isHash) {
+        memzero_s(tmp, ACVP_KAS_FFC_STR_MAX);
+        rv = acvp_bin_to_hexstr(stc->z, stc->zlen, tmp, ACVP_KAS_FFC_STR_MAX);
+        if (rv != ACVP_SUCCESS) {
+            ACVP_LOG_ERR("hex conversion failure (Z)");
+            goto end;
+        }
+        json_object_set_string(tc_rsp, "z", tmp);
+    }
 
 end:
     if (tmp) free(tmp);
@@ -796,7 +809,7 @@ static ACVP_RESULT acvp_kas_ffc_ssc(ACVP_CTX *ctx,
         t_cnt = json_array_get_count(tests);
 
         for (j = 0; j < t_cnt; j++) {
-            const char *eps = NULL, *z = NULL, *epri = NULL, *epui = NULL;
+            const char *eps = NULL, *hashZ = NULL, *z = NULL, *epri = NULL, *epui = NULL;
 
             ACVP_LOG_VERBOSE("Found new KAS-FFC Component test vector...");
             testval = json_array_get_value(tests, j);
@@ -849,22 +862,42 @@ static ACVP_RESULT acvp_kas_ffc_ssc(ACVP_CTX *ctx,
                     goto err;
                 }
 
-                z = json_object_get_string(testobj, "hashZ");
-                if (!z) {
-                    ACVP_LOG_ERR("Server JSON missing 'hashZ'");
+                hashZ = json_object_get_string(testobj, "hashZ");
+                if (hash_str && !hashZ) {
+                    ACVP_LOG_ERR("Hash algorithm given, but Server JSON missing 'hashZ'");
                     rv = ACVP_MISSING_ARG;
                     goto err;
                 }
-                if (strnlen_s(z, ACVP_KAS_FFC_STR_MAX + 1)
-                    > ACVP_KAS_FFC_STR_MAX) {
-                    ACVP_LOG_ERR("hashZIut too long, max allowed=(%d)",
-                                 ACVP_KAS_FFC_STR_MAX);
-                    rv = ACVP_INVALID_ARG;
+                z = json_object_get_string(testobj, "z");
+                if (!hash_str && !z) {
+                    ACVP_LOG_ERR("Server JSON missing 'z'");
+                    rv = ACVP_MISSING_ARG;
                     goto err;
+                }
+
+                if (hashZ) {
+                    if (strnlen_s(hashZ, ACVP_KAS_FFC_STR_MAX + 1)
+                        > ACVP_KAS_FFC_STR_MAX) {
+                        ACVP_LOG_ERR("hashZIut too long, max allowed=(%d)",
+                                     ACVP_KAS_FFC_STR_MAX);
+                        rv = ACVP_INVALID_ARG;
+                        goto err;
+                    }
+                }
+
+                if (z) {
+                    if (strnlen_s(z, ACVP_KAS_FFC_STR_MAX + 1)
+                        > ACVP_KAS_FFC_STR_MAX) {
+                        ACVP_LOG_ERR("zIut too long, max allowed=(%d)",
+                                     ACVP_KAS_FFC_STR_MAX);
+                        rv = ACVP_INVALID_ARG;
+                        goto err;
+                    }
                 }
             }
 
             ACVP_LOG_VERBOSE("            eps: %s", eps);
+            ACVP_LOG_VERBOSE("          hashZ: %s", hashZ);
             ACVP_LOG_VERBOSE("              z: %s", z);
             ACVP_LOG_VERBOSE("           epri: %s", epri);
             ACVP_LOG_VERBOSE("           epui: %s", epui);

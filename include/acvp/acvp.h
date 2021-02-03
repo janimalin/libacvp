@@ -1437,6 +1437,7 @@ typedef struct acvp_kas_ffc_tc_t {
     unsigned char *eps;
     unsigned char *epri;
     unsigned char *epui;
+    unsigned char *hashz;
     unsigned char *z;
     unsigned char *chash;
     unsigned char *piut;
@@ -1444,6 +1445,7 @@ typedef struct acvp_kas_ffc_tc_t {
     int qlen;
     int glen;
     int dlen;
+    int hashzlen;
     int zlen;
     int epslen;
     int eprilen;

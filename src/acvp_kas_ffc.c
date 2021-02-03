@@ -39,8 +39,13 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
     if (stc->test_type == ACVP_KAS_FFC_TT_VAL) {
         int diff = 1;
 
-        memcmp_s(stc->chash, ACVP_KAS_FFC_BYTE_MAX,
-                 stc->z, stc->zlen, &diff);
+        if (isHash) {
+            memcmp_s(stc->chash, ACVP_KAS_FFC_BYTE_MAX,
+                    stc->hashz, stc->hashzlen, &diff);
+        } else {
+            memcmp_s(stc->chash, ACVP_KAS_FFC_BYTE_MAX,
+                    stc->z, stc->zlen, &diff);            
+        }
         if (!diff) {
             json_object_set_boolean(tc_rsp, "testPassed", 1);
         } else {
@@ -52,7 +57,7 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
     memzero_s(tmp, ACVP_KAS_FFC_STR_MAX);
     rv = acvp_bin_to_hexstr(stc->piut, stc->piutlen, tmp, ACVP_KAS_FFC_STR_MAX);
     if (rv != ACVP_SUCCESS) {
-        ACVP_LOG_ERR("hex conversion failure (Z)");
+        ACVP_LOG_ERR("hex conversion failure (Z piut)");
         goto end;
     }
     json_object_set_string(tc_rsp, "ephemeralPublicIut", tmp);
@@ -67,7 +72,7 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
         json_object_set_string(tc_rsp, "hashZ", tmp);
     }
 
-    if (stc->z && !isHash) {
+    if (!isHash && stc->zlen > 0) {
         memzero_s(tmp, ACVP_KAS_FFC_STR_MAX);
         rv = acvp_bin_to_hexstr(stc->z, stc->zlen, tmp, ACVP_KAS_FFC_STR_MAX);
         if (rv != ACVP_SUCCESS) {
@@ -140,6 +145,7 @@ static ACVP_RESULT acvp_kas_ffc_init_comp_tc(ACVP_CTX *ctx,
                                              const char *eps,
                                              const char *epri,
                                              const char *epui,
+                                             const char *hashz,
                                              const char *z,
                                              ACVP_KAS_FFC_TEST_TYPE test_type) {
     ACVP_RESULT rv;
@@ -196,14 +202,25 @@ static ACVP_RESULT acvp_kas_ffc_init_comp_tc(ACVP_CTX *ctx,
     stc->piut = calloc(1, ACVP_KAS_FFC_BYTE_MAX);
     if (!stc->piut) { return ACVP_MALLOC_FAIL; }
 
+    stc->hashz = calloc(1, ACVP_KAS_FFC_BYTE_MAX);
+    if (!stc->hashz) { return ACVP_MALLOC_FAIL; }
     stc->z = calloc(1, ACVP_KAS_FFC_BYTE_MAX);
     if (!stc->z) { return ACVP_MALLOC_FAIL; }
 
-    if (stc->test_type == ACVP_KAS_FFC_TT_VAL) {
-        rv = acvp_hexstr_to_bin(z, stc->z, ACVP_KAS_FFC_BYTE_MAX, &(stc->zlen));
-        if (rv != ACVP_SUCCESS) {
-            ACVP_LOG_ERR("Hex conversion failure (z)");
-            return rv;
+    if (stc->test_type == ACVP_KAS_FFC_TT_VAL) {        
+        if (hashz) {
+            rv = acvp_hexstr_to_bin(hashz, stc->hashz, ACVP_KAS_FFC_BYTE_MAX, &(stc->hashzlen));
+            if (rv != ACVP_SUCCESS) {
+                ACVP_LOG_ERR("Hex conversion failure (hashz)");
+                return rv;
+            }
+        }
+        if (z) {
+            rv = acvp_hexstr_to_bin(z, stc->z, ACVP_KAS_FFC_BYTE_MAX, &(stc->zlen));
+            if (rv != ACVP_SUCCESS) {
+                ACVP_LOG_ERR("Hex conversion failure (z)");
+                return rv;
+            }
         }
         rv = acvp_hexstr_to_bin(epri, stc->epri, ACVP_KAS_FFC_BYTE_MAX, &(stc->eprilen));
         if (rv != ACVP_SUCCESS) {
@@ -228,6 +245,7 @@ static ACVP_RESULT acvp_kas_ffc_release_tc(ACVP_KAS_FFC_TC *stc) {
     if (stc->epri) free(stc->epri);
     if (stc->epui) free(stc->epui);
     if (stc->eps) free(stc->eps);
+    if (stc->hashz) free(stc->hashz);
     if (stc->z) free(stc->z);
     if (stc->chash) free(stc->chash);
     if (stc->p) free(stc->p);
@@ -459,7 +477,7 @@ static ACVP_RESULT acvp_kas_ffc_comp(ACVP_CTX *ctx,
              * the crypto module.
              */
             rv = acvp_kas_ffc_init_comp_tc(ctx, stc, hash_alg, 0,
-                                           p, q, g, eps, epri, epui, z, test_type);
+                                           p, q, g, eps, epri, epui, NULL, z, test_type);
             if (rv != ACVP_SUCCESS) {
                 acvp_kas_ffc_release_tc(stc);
                 json_value_free(r_tval);
@@ -914,7 +932,7 @@ static ACVP_RESULT acvp_kas_ffc_ssc(ACVP_CTX *ctx,
              * the crypto module.
              */
             rv = acvp_kas_ffc_init_comp_tc(ctx, stc, hash_alg, generate_mode,
-                                           p, q, g, eps, epri, epui, z, test_type);
+                                           p, q, g, eps, epri, epui, hashZ, z, test_type);
             if (rv != ACVP_SUCCESS) {
                 acvp_kas_ffc_release_tc(stc);
                 json_value_free(r_tval);

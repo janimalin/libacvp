@@ -1339,6 +1339,7 @@ typedef struct acvp_kas_ecc_tc_t {
     unsigned char *pix;
     unsigned char *piy;
     unsigned char *d;
+    unsigned char *hashz;
     unsigned char *z;
     unsigned char *chash;
     int psxlen;
@@ -1346,6 +1347,7 @@ typedef struct acvp_kas_ecc_tc_t {
     int pixlen;
     int piylen;
     int dlen;
+    int hashzlen;
     int zlen;
     int chashlen;
 } ACVP_KAS_ECC_TC;
@@ -1429,7 +1431,7 @@ typedef struct acvp_kas_ffc_tc_t {
     ACVP_KAS_FFC_TEST_TYPE test_type;
     ACVP_HASH_ALG md;
     ACVP_KAS_FFC_MODE mode;
-    unsigned char *generate_mode;
+    const char *generate_mode;
     unsigned char *p;
     unsigned char *q;
     unsigned char *g;

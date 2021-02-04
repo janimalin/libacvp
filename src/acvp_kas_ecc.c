@@ -75,7 +75,8 @@ static ACVP_RESULT acvp_kas_ecc_output_comp_tc(ACVP_CTX *ctx,
                                                JSON_Object *tc_rsp) {
     ACVP_RESULT rv = ACVP_SUCCESS;
     char *tmp = NULL;
-
+    int hasReplyHash = (stc->chash && stc->chashlen > 0);
+    
     tmp = calloc(1, ACVP_KAS_ECC_STR_MAX + 1);
     if (!tmp) {
         ACVP_LOG_ERR("Unable to malloc in acvp_aes_output_mct_tc");
@@ -91,7 +92,7 @@ static ACVP_RESULT acvp_kas_ecc_output_comp_tc(ACVP_CTX *ctx,
             ACVP_LOG_ERR("hex conversion failure (Z)");
             goto end;
         }
-        memcmp_s(stc->chash, ACVP_KAS_ECC_BYTE_MAX, stc->z, stc->zlen, &diff);
+        memcmp_s(stc->chash, ACVP_KAS_ECC_BYTE_MAX, stc->z, stc->zlen, &diff);            
         if (!diff) {
             json_object_set_boolean(tc_rsp, "testPassed", 1);
         } else {
@@ -124,13 +125,25 @@ static ACVP_RESULT acvp_kas_ecc_output_comp_tc(ACVP_CTX *ctx,
     }
     json_object_set_string(tc_rsp, "ephemeralPrivateIut", tmp);
 
-    memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
-    rv = acvp_bin_to_hexstr(stc->chash, stc->chashlen, tmp, ACVP_KAS_ECC_STR_MAX);
-    if (rv != ACVP_SUCCESS) {
-        ACVP_LOG_ERR("hex conversion failure (Z)");
-        goto end;
+    if (hasReplyHash) {
+        memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
+        rv = acvp_bin_to_hexstr(stc->chash, stc->chashlen, tmp, ACVP_KAS_ECC_STR_MAX);
+        if (rv != ACVP_SUCCESS) {
+            ACVP_LOG_ERR("hex conversion failure (hashZ)");
+            goto end;
+        }
+        json_object_set_string(tc_rsp, "hashZIut", tmp);
     }
-    json_object_set_string(tc_rsp, "hashZIut", tmp);
+
+    if (hasReplyHash && stc->zlen > 0) {
+        memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
+        rv = acvp_bin_to_hexstr(stc->z, stc->zlen, tmp, ACVP_KAS_ECC_STR_MAX);
+        if (rv != ACVP_SUCCESS) {
+            ACVP_LOG_ERR("hex conversion failure (Z)");
+            goto end;
+        }
+        json_object_set_string(tc_rsp, "ZIut", tmp);
+    }
 
 end:
     if (tmp) free(tmp);
@@ -191,6 +204,7 @@ static ACVP_RESULT acvp_kas_ecc_init_comp_tc(ACVP_CTX *ctx,
                                              const char *d,
                                              const char *pix,
                                              const char *piy,
+                                             const char *hashz,
                                              const char *z) {
     ACVP_RESULT rv;
 
@@ -221,13 +235,15 @@ static ACVP_RESULT acvp_kas_ecc_init_comp_tc(ACVP_CTX *ctx,
     if (!stc->piy) { return ACVP_MALLOC_FAIL; }
     stc->d = calloc(1, ACVP_KAS_ECC_BYTE_MAX);
     if (!stc->d) { return ACVP_MALLOC_FAIL; }
+    stc->hashz = calloc(1, ACVP_KAS_ECC_BYTE_MAX);
+    if (!stc->hashz) { return ACVP_MALLOC_FAIL; }
     stc->z = calloc(1, ACVP_KAS_ECC_BYTE_MAX);
     if (!stc->z) { return ACVP_MALLOC_FAIL; }
     stc->chash = calloc(1, ACVP_KAS_ECC_BYTE_MAX);
     if (!stc->chash) { return ACVP_MALLOC_FAIL; }
 
     if (stc->test_type == ACVP_KAS_ECC_TT_VAL) {
-        if (!pix || !piy || !d || !z) {
+        if (!pix || !piy || !d || (!hashz && !z)) {
             return ACVP_MISSING_ARG;
         }
 
@@ -249,10 +265,19 @@ static ACVP_RESULT acvp_kas_ecc_init_comp_tc(ACVP_CTX *ctx,
             return rv;
         }
 
-        rv = acvp_hexstr_to_bin(z, stc->z, ACVP_KAS_ECC_BYTE_MAX, &(stc->zlen));
-        if (rv != ACVP_SUCCESS) {
-            ACVP_LOG_ERR("Hex conversion failure (z)");
-            return rv;
+        if (z) {
+            rv = acvp_hexstr_to_bin(z, stc->z, ACVP_KAS_ECC_BYTE_MAX, &(stc->zlen));
+            if (rv != ACVP_SUCCESS) {
+                ACVP_LOG_ERR("Hex conversion failure (z)");
+                return rv;
+            }
+        }
+        if (hashz) {
+            rv = acvp_hexstr_to_bin(hashz, stc->hashz, ACVP_KAS_ECC_BYTE_MAX, &(stc->hashzlen));
+            if (rv != ACVP_SUCCESS) {
+                ACVP_LOG_ERR("Hex conversion failure (hashz)");
+                return rv;
+            }
         }
     }
 
@@ -270,6 +295,7 @@ static ACVP_RESULT acvp_kas_ecc_release_tc(ACVP_KAS_ECC_TC *stc) {
     if (stc->pix) free(stc->pix);
     if (stc->piy) free(stc->piy);
     if (stc->d) free(stc->d);
+    if (stc->hashz) free(stc->hashz);
     if (stc->z) free(stc->z);
 
     memzero_s(stc, sizeof(ACVP_KAS_ECC_TC));
@@ -686,7 +712,7 @@ static ACVP_RESULT acvp_kas_ecc_comp(ACVP_CTX *ctx,
              */
             rv = acvp_kas_ecc_init_comp_tc(ctx, stc, test_type,
                                            curve, hash, psx, psy,
-                                           d, pix, piy, z);
+                                           d, pix, piy, NULL, z);
             if (rv != ACVP_SUCCESS) {
                 acvp_kas_ecc_release_tc(stc);
                 json_value_free(r_tval);
@@ -940,7 +966,8 @@ static ACVP_RESULT acvp_kas_ecc_output_ssc_tc(ACVP_CTX *ctx,
                                               JSON_Object *tc_rsp) {
     ACVP_RESULT rv = ACVP_SUCCESS;
     char *tmp = NULL;
-
+    int hasReplyHash = (stc->chash && stc->chashlen > 0);
+    
     tmp = calloc(1, ACVP_KAS_ECC_STR_MAX + 1);
     if (!tmp) {
         ACVP_LOG_ERR("Unable to malloc in acvp_aes_output_mct_tc");
@@ -956,7 +983,13 @@ static ACVP_RESULT acvp_kas_ecc_output_ssc_tc(ACVP_CTX *ctx,
             ACVP_LOG_ERR("hex conversion failure (Z)");
             goto end;
         }
-        memcmp_s(stc->chash, ACVP_KAS_ECC_BYTE_MAX, stc->z, stc->zlen, &diff);
+        if (stc->hashz && stc->hashzlen > 0) {        
+            memcmp_s(stc->chash, ACVP_KAS_FFC_BYTE_MAX,
+                     stc->hashz, stc->hashzlen, &diff);
+        } else {
+            memcmp_s(stc->chash, ACVP_KAS_FFC_BYTE_MAX,
+                     stc->z, stc->zlen, &diff);
+        }
         if (!diff) {
             json_object_set_boolean(tc_rsp, "testPassed", 1);
         } else {
@@ -989,13 +1022,25 @@ static ACVP_RESULT acvp_kas_ecc_output_ssc_tc(ACVP_CTX *ctx,
     }
     json_object_set_string(tc_rsp, "ephemeralPrivateIut", tmp);
 
-    memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
-    rv = acvp_bin_to_hexstr(stc->chash, stc->chashlen, tmp, ACVP_KAS_ECC_STR_MAX);
-    if (rv != ACVP_SUCCESS) {
-        ACVP_LOG_ERR("hex conversion failure (Z)");
-        goto end;
+    if (hasReplyHash) {
+        memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
+        rv = acvp_bin_to_hexstr(stc->chash, stc->chashlen, tmp, ACVP_KAS_ECC_STR_MAX);
+        if (rv != ACVP_SUCCESS) {
+            ACVP_LOG_ERR("hex conversion failure (hashZ)");
+            goto end;
+        }
+        json_object_set_string(tc_rsp, "hashZIut", tmp);
     }
-    json_object_set_string(tc_rsp, "hashZ", tmp);
+
+    if (hasReplyHash && stc->zlen > 0) {
+        memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
+        rv = acvp_bin_to_hexstr(stc->z, stc->zlen, tmp, ACVP_KAS_ECC_STR_MAX);
+        if (rv != ACVP_SUCCESS) {
+            ACVP_LOG_ERR("hex conversion failure (Z)");
+            goto end;
+        }
+        json_object_set_string(tc_rsp, "ZIut", tmp);
+    }
 
 end:
     if (tmp) free(tmp);
@@ -1065,17 +1110,14 @@ static ACVP_RESULT acvp_kas_ecc_ssc(ACVP_CTX *ctx,
         }
 
         hash_str = json_object_get_string(groupobj, "hashFunctionZ");
-        if (!hash_str) {
-            ACVP_LOG_ERR("Server JSON missing 'hashFunctionZ'");
-            rv = ACVP_MISSING_ARG;
-            goto err;
-        }
-        hash = acvp_lookup_hash_alg(hash_str);
-        if (!(hash == ACVP_SHA224 || hash == ACVP_SHA256 ||
-              hash == ACVP_SHA384 || hash == ACVP_SHA512)) {
-            ACVP_LOG_ERR("Server JSON invalid 'hashAlg'");
-            rv = ACVP_INVALID_ARG;
-            goto err;
+        if (hash_str) {
+            hash = acvp_lookup_hash_alg(hash_str);
+            if (!(hash == ACVP_SHA224 || hash == ACVP_SHA256 ||
+                  hash == ACVP_SHA384 || hash == ACVP_SHA512)) {
+                ACVP_LOG_ERR("Server JSON invalid 'hashAlg'");
+                rv = ACVP_INVALID_ARG;
+                goto err;
+            }
         }
 
         test_type_str = json_object_get_string(groupobj, "testType");
@@ -1101,7 +1143,7 @@ static ACVP_RESULT acvp_kas_ecc_ssc(ACVP_CTX *ctx,
 
         for (j = 0; j < t_cnt; j++) {
             const char *psx = NULL, *psy = NULL, *pix = NULL,
-                       *piy = NULL, *d = NULL, *z = NULL;
+                       *piy = NULL, *d = NULL, *hashZ = NULL, *z = NULL;
 
             ACVP_LOG_VERBOSE("Found new KAS-ECC-SSC Component test vector...");
             testval = json_array_get_value(tests, j);
@@ -1195,24 +1237,31 @@ static ACVP_RESULT acvp_kas_ecc_ssc(ACVP_CTX *ctx,
                     goto err;
                 }
 
-                z = json_object_get_string(testobj, "hashZ");
-                if (!z) {
-                    ACVP_LOG_ERR("Server JSON missing 'hashZ'");
-                    rv = ACVP_MISSING_ARG;
-                    json_value_free(r_tval);
-                    goto err;
+                hashZ = json_object_get_string(testobj, "hashZ");
+                if (hashZ) {
+                    if (strnlen_s(hashZ, ACVP_KAS_ECC_STR_MAX + 1) > ACVP_KAS_ECC_STR_MAX) {
+                        ACVP_LOG_ERR("hashZIut too long, max allowed=(%d)",
+                                     ACVP_KAS_ECC_STR_MAX);
+                        rv = ACVP_INVALID_ARG;
+                        json_value_free(r_tval);
+                        goto err;
+                    }
                 }
-                if (strnlen_s(z, ACVP_KAS_ECC_STR_MAX + 1) > ACVP_KAS_ECC_STR_MAX) {
-                    ACVP_LOG_ERR("hashZIut too long, max allowed=(%d)",
-                                 ACVP_KAS_ECC_STR_MAX);
-                    rv = ACVP_INVALID_ARG;
-                    json_value_free(r_tval);
-                    goto err;
+                z = json_object_get_string(testobj, "z");
+                if (z) {
+                    if (strnlen_s(z, ACVP_KAS_ECC_STR_MAX + 1) > ACVP_KAS_ECC_STR_MAX) {
+                        ACVP_LOG_ERR("ZIut too long, max allowed=(%d)",
+                                     ACVP_KAS_ECC_STR_MAX);
+                        rv = ACVP_INVALID_ARG;
+                        json_value_free(r_tval);
+                        goto err;
+                    }
                 }
 
                 ACVP_LOG_VERBOSE("              d: %s", d);
                 ACVP_LOG_VERBOSE("            pix: %s", pix);
                 ACVP_LOG_VERBOSE("            piy: %s", piy);
+                ACVP_LOG_VERBOSE("          hashz: %s", hashZ);
                 ACVP_LOG_VERBOSE("              z: %s", z);
             }
 
@@ -1226,7 +1275,7 @@ static ACVP_RESULT acvp_kas_ecc_ssc(ACVP_CTX *ctx,
              */
             rv = acvp_kas_ecc_init_comp_tc(ctx, stc, test_type,
                                            curve, hash, psx, psy,
-                                           d, pix, piy, z);
+                                           d, pix, piy, hashZ, z);
             if (rv != ACVP_SUCCESS) {
                 acvp_kas_ecc_release_tc(stc);
                 json_value_free(r_tval);

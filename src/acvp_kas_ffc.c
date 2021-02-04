@@ -28,7 +28,7 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
                                                JSON_Object *tc_rsp) {
     ACVP_RESULT rv = ACVP_SUCCESS;
     char *tmp = NULL;
-    int isHash = (stc->chash && stc->chashlen > 0);
+    int hasReplyHash = (stc->chash && stc->chashlen > 0);
 
     tmp = calloc(ACVP_KAS_FFC_STR_MAX + 1, sizeof(char));
     if (!tmp) {
@@ -39,7 +39,7 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
     if (stc->test_type == ACVP_KAS_FFC_TT_VAL) {
         int diff = 1;
 
-        if (isHash) {
+        if (stc->hashz && stc->hashzlen > 0) {
             memcmp_s(stc->chash, ACVP_KAS_FFC_BYTE_MAX,
                     stc->hashz, stc->hashzlen, &diff);
         } else {
@@ -62,7 +62,7 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
     }
     json_object_set_string(tc_rsp, "ephemeralPublicIut", tmp);
 
-    if (isHash) {
+    if (hasReplyHash) {
         memzero_s(tmp, ACVP_KAS_FFC_STR_MAX);
         rv = acvp_bin_to_hexstr(stc->chash, stc->chashlen, tmp, ACVP_KAS_FFC_STR_MAX);
         if (rv != ACVP_SUCCESS) {
@@ -72,7 +72,7 @@ static ACVP_RESULT acvp_kas_ffc_output_ssc_tc(ACVP_CTX *ctx,
         json_object_set_string(tc_rsp, "hashZ", tmp);
     }
 
-    if (!isHash && stc->zlen > 0) {
+    if (!hasReplyHash && stc->zlen > 0) {
         memzero_s(tmp, ACVP_KAS_FFC_STR_MAX);
         rv = acvp_bin_to_hexstr(stc->z, stc->zlen, tmp, ACVP_KAS_FFC_STR_MAX);
         if (rv != ACVP_SUCCESS) {

@@ -2965,8 +2965,8 @@ static ACVP_RESULT acvp_build_kas_ffc_register_cap(ACVP_CTX *ctx,
                      json_object_set_string(cap_obj, "hashFunctionZ", "SHA2-512");
                      break;
                 default:
-                    ACVP_LOG_ERR("Unsupported KAS-FFC sha param %d", kas_ffc_mode->hash);
-                    return ACVP_INVALID_ARG;
+                    //ACVP_LOG_ERR("Unsupported KAS-FFC sha param %d", kas_ffc_mode->hash);
+                    //return ACVP_INVALID_ARG;
                     break;
             }
             genmeth = kas_ffc_mode->genmeth;

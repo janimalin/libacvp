@@ -2818,6 +2818,21 @@ static ACVP_RESULT acvp_build_kas_ffc_register_cap(ACVP_CTX *ctx,
                     case ACVP_KAS_FFC_MODP_8192:
                         json_object_set_value(pset_obj, "MODP-8192", set_val);
                         break;
+                    case ACVP_KAS_FFC_FFDHE_2048:
+                        json_object_set_value(pset_obj, "ffdhe2048", set_val);
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_3072:
+                        json_object_set_value(pset_obj, "ffdhe3072", set_val);
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_4096:
+                        json_object_set_value(pset_obj, "ffdhe4096", set_val);
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_6144:
+                        json_object_set_value(pset_obj, "ffdhe6144", set_val);
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_8192:
+                        json_object_set_value(pset_obj, "ffdhe8192", set_val);
+                        break;
                     default:
                         ACVP_LOG_ERR("Unsupported KAS-FFC set %d", set);
                         return ACVP_INVALID_ARG;
@@ -2979,6 +2994,21 @@ static ACVP_RESULT acvp_build_kas_ffc_register_cap(ACVP_CTX *ctx,
                         break;
                     case ACVP_KAS_FFC_MODP_8192:
                         json_array_append_string(temp_arr, "MODP-8192");
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_2048:
+                        json_array_append_string(temp_arr, "ffdhe2048");
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_3072:
+                        json_array_append_string(temp_arr, "ffdhe3072");
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_4096:
+                        json_array_append_string(temp_arr, "ffdhe4096");
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_6144:
+                        json_array_append_string(temp_arr, "ffdhe6144");
+                        break;
+                    case ACVP_KAS_FFC_FFDHE_8192:
+                        json_array_append_string(temp_arr, "ffdhe8192");
                         break;
                     default:
                         ACVP_LOG_ERR("Unsupported KAS-FFC sha param %d", genmeth->param);

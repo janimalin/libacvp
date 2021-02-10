@@ -189,6 +189,9 @@
 /* ECDSA */
 #define ACVP_REV_ECDSA               ACVP_REVISION_LATEST
 
+/* PRIMES */
+#define ACVP_REV_PRIMES              ACVP_REVISION_LATEST
+
 /* KAS_ECC */
 #define ACVP_REV_KAS_ECC             ACVP_REVISION_LATEST
 #define ACVP_REV_KAS_ECC_SSC         ACVP_REVISION_SP800_56AR3
@@ -305,6 +308,7 @@
 #define ACVP_ALG_KAS_ECC_COMP        "Component"
 #define ACVP_ALG_KAS_ECC_NOCOMP      ""
 
+#define ACVP_ALG_PRIMES              "safePrimes"
 
 #define ACVP_ALG_KAS_ECC_SSC         "KAS-ECC-SSC"
 #define ACVP_ALG_KAS_ECC             "KAS-ECC"
@@ -727,6 +731,14 @@
 #define ACVP_KAS_ECC_STR_MAX (ACVP_KAS_ECC_BIT_MAX >> 2)
 
 /*
+ * START PRIMES
+ */
+#define ACVP_PRIMES_BIT_MAX 8192
+#define ACVP_PRIMES_BYTE_MAX (ACVP_PRIMES_BIT_MAX >> 3)
+#define ACVP_PRIMES_STR_MAX (ACVP_PRIMES_BIT_MAX >> 2)
+
+
+/*
  * START RSA
  */
 #define ACVP_RSA_SEEDLEN_MAX    64
@@ -874,7 +886,8 @@ typedef enum acvp_capability_type {
     ACVP_KAS_FFC_SSC_TYPE,
     ACVP_KAS_FFC_NOCOMP_TYPE,
     ACVP_KAS_IFC_TYPE,
-    ACVP_KTS_IFC_TYPE
+    ACVP_KTS_IFC_TYPE,
+    ACVP_PRIMES_TYPE
 } ACVP_CAP_TYPE;
 
 /*
@@ -1163,6 +1176,17 @@ typedef struct acvp_dsa_capability {
     ACVP_DSA_CAP_MODE *dsa_cap_mode;
 } ACVP_DSA_CAP;
 
+typedef struct acvp_primes_cap_mode_t {
+    ACVP_PRIMES_MODE cap_mode;
+    ACVP_PREREQ_LIST *prereq_vals;
+    ACVP_PARAM_LIST *group;
+} ACVP_PRIMES_CAP_MODE;
+
+typedef struct acvp_primes_capability {
+    ACVP_CIPHER cipher;
+    ACVP_PRIMES_CAP_MODE *primes_cap_mode;
+} ACVP_PRIMES_CAP;
+
 typedef struct acvp_kas_ecc_mac {
     int alg;
     int curve;
@@ -1317,6 +1341,7 @@ typedef struct acvp_caps_list_t {
         ACVP_KAS_FFC_CAP *kas_ffc_cap;
         ACVP_KAS_IFC_CAP *kas_ifc_cap;
         ACVP_KTS_IFC_CAP *kts_ifc_cap;
+        ACVP_PRIMES_CAP *primes_cap;
     } cap;
 
     int (*crypto_handler)(ACVP_TEST_CASE *test_case);
@@ -1607,6 +1632,9 @@ ACVP_RESULT acvp_kdf108_kat_handler(ACVP_CTX *ctx, JSON_Object *obj);
 ACVP_RESULT acvp_pbkdf_kat_handler(ACVP_CTX *ctx, JSON_Object *obj);
 
 ACVP_RESULT acvp_dsa_kat_handler(ACVP_CTX *ctx, JSON_Object *obj);
+
+ACVP_RESULT acvp_primes_keygen_kat_handler(ACVP_CTX *ctx, JSON_Object *obj);
+ACVP_RESULT acvp_primes_keyver_kat_handler(ACVP_CTX *ctx, JSON_Object *obj);
 
 ACVP_RESULT acvp_kas_ecc_kat_handler(ACVP_CTX *ctx, JSON_Object *obj);
 

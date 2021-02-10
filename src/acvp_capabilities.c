@@ -83,6 +83,30 @@ static ACVP_DSA_CAP *allocate_dsa_cap(void) {
     return cap;
 }
 
+static ACVP_PRIMES_CAP *allocate_primes_cap(void) {
+    ACVP_PRIMES_CAP *cap = NULL;
+    ACVP_KAS_ECC_CAP_MODE *modes = NULL;
+    int i = 0;
+
+    cap = calloc(1, sizeof(ACVP_PRIMES_CAP));
+    if (!cap) {
+        return NULL;
+    }
+
+    modes = calloc(ACVP_PRIMES_MAX_MODES, sizeof(ACVP_PRIMES_CAP_MODE));
+    if (!modes) {
+        free(cap);
+        return NULL;
+    }
+    cap->primes_cap_mode = (ACVP_PRIMES_CAP_MODE *) modes;
+
+    for (i = 0; i < ACVP_PRIMES_MAX_MODES; i++) {
+        cap->primes_cap_mode[i].cap_mode = (ACVP_PRIMES_MODE)(i + 1);
+    }
+
+    return cap;
+}
+
 static ACVP_KAS_ECC_CAP *allocate_kas_ecc_cap(void) {
     ACVP_KAS_ECC_CAP *cap = NULL;
     ACVP_KAS_ECC_CAP_MODE *modes = NULL;
@@ -275,6 +299,14 @@ static ACVP_RESULT acvp_cap_list_append(ACVP_CTX *ctx,
         }
         break;
 
+    case ACVP_PRIMES_TYPE:
+        cap_entry->cap.primes_cap = allocate_primes_cap();
+        if (!cap_entry->cap.primes_cap) {
+            rv = ACVP_MALLOC_FAIL;
+            goto err;
+        }        
+        break;
+        
     case ACVP_KAS_ECC_CDH_TYPE:
         if (cipher != ACVP_KAS_ECC_CDH) {
             rv = ACVP_INVALID_ARG;
@@ -932,6 +964,8 @@ static ACVP_RESULT acvp_validate_sym_cipher_parm_value(ACVP_CIPHER cipher, ACVP_
         case ACVP_KDF135_X963:
         case ACVP_KDF108:
         case ACVP_PBKDF:
+        case ACVP_PRIMES_KEYGEN:
+        case ACVP_PRIMES_KEYVER:
         case ACVP_KAS_ECC_CDH:
         case ACVP_KAS_ECC_COMP:
         case ACVP_KAS_ECC_NOCOMP:
@@ -1027,6 +1061,8 @@ static ACVP_RESULT acvp_validate_sym_cipher_parm_value(ACVP_CIPHER cipher, ACVP_
         case ACVP_KDF135_X963:
         case ACVP_KDF108:
         case ACVP_PBKDF:
+        case ACVP_PRIMES_KEYGEN:
+        case ACVP_PRIMES_KEYVER:
         case ACVP_KAS_ECC_CDH:
         case ACVP_KAS_ECC_COMP:
         case ACVP_KAS_ECC_NOCOMP:
@@ -1134,6 +1170,8 @@ static ACVP_RESULT acvp_validate_sym_cipher_parm_value(ACVP_CIPHER cipher, ACVP_
         case ACVP_KDF135_X963:
         case ACVP_KDF108:
         case ACVP_PBKDF:
+        case ACVP_PRIMES_KEYGEN:
+        case ACVP_PRIMES_KEYVER:
         case ACVP_KAS_ECC_CDH:
         case ACVP_KAS_ECC_COMP:
         case ACVP_KAS_ECC_NOCOMP:
@@ -1229,6 +1267,8 @@ static ACVP_RESULT acvp_validate_sym_cipher_parm_value(ACVP_CIPHER cipher, ACVP_
         case ACVP_KDF135_X963:
         case ACVP_KDF108:
         case ACVP_PBKDF:
+        case ACVP_PRIMES_KEYGEN:
+         case ACVP_PRIMES_KEYVER:
         case ACVP_KAS_ECC_CDH:
         case ACVP_KAS_ECC_COMP:
         case ACVP_KAS_ECC_NOCOMP:
@@ -1405,6 +1445,12 @@ static ACVP_RESULT acvp_validate_prereq_val(ACVP_CIPHER cipher, ACVP_PREREQ_ALG 
     case ACVP_PBKDF:
         if (pre_req == ACVP_PREREQ_DRBG ||
             pre_req == ACVP_PREREQ_HMAC) {
+            return ACVP_SUCCESS;
+        }
+        break;
+    case ACVP_PRIMES_KEYGEN:
+    case ACVP_PRIMES_KEYVER:
+        if (pre_req == ACVP_PREREQ_DRBG) {
             return ACVP_SUCCESS;
         }
         break;
@@ -1638,6 +1684,8 @@ ACVP_RESULT acvp_cap_sym_cipher_set_parm(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -1909,6 +1957,8 @@ ACVP_RESULT acvp_cap_sym_cipher_enable(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -2027,6 +2077,8 @@ ACVP_RESULT acvp_cap_hash_enable(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -2162,6 +2214,8 @@ ACVP_RESULT acvp_cap_hash_set_parm(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -2278,6 +2332,8 @@ ACVP_RESULT acvp_cap_hash_set_parm(ACVP_CTX *ctx,
         case ACVP_KDF135_X963:
         case ACVP_KDF108:
         case ACVP_PBKDF:
+        case ACVP_PRIMES_KEYVER:
+        case ACVP_PRIMES_KEYGEN:
         case ACVP_KAS_ECC_CDH:
         case ACVP_KAS_ECC_COMP:
         case ACVP_KAS_ECC_NOCOMP:
@@ -2401,6 +2457,8 @@ ACVP_RESULT acvp_cap_hash_set_domain(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -2586,6 +2644,8 @@ static ACVP_RESULT acvp_validate_hmac_parm_value(ACVP_CIPHER cipher,
         case ACVP_KDF135_X963:
         case ACVP_KDF108:
         case ACVP_PBKDF:
+        case ACVP_PRIMES_KEYVER:
+        case ACVP_PRIMES_KEYGEN:
         case ACVP_KAS_ECC_CDH:
         case ACVP_KAS_ECC_COMP:
         case ACVP_KAS_ECC_NOCOMP:
@@ -2707,6 +2767,8 @@ ACVP_RESULT acvp_cap_hmac_enable(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -2959,6 +3021,8 @@ ACVP_RESULT acvp_cap_cmac_enable(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -3605,6 +3669,8 @@ ACVP_RESULT acvp_cap_drbg_set_parm(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -4481,6 +4547,8 @@ static ACVP_RESULT internal_cap_rsa_sig_enable(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -4596,6 +4664,8 @@ ACVP_RESULT acvp_cap_rsa_sig_enable(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -4843,6 +4913,8 @@ ACVP_RESULT acvp_cap_ecdsa_set_parm(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -5042,6 +5114,8 @@ ACVP_RESULT acvp_cap_ecdsa_enable(ACVP_CTX *ctx,
     case ACVP_KDF135_X963:
     case ACVP_KDF108:
     case ACVP_PBKDF:
+    case ACVP_PRIMES_KEYVER:
+    case ACVP_PRIMES_KEYGEN:
     case ACVP_KAS_ECC_CDH:
     case ACVP_KAS_ECC_COMP:
     case ACVP_KAS_ECC_NOCOMP:
@@ -6450,6 +6524,119 @@ ACVP_RESULT acvp_cap_kdf108_set_domain(ACVP_CTX *ctx,
     domain->max = max;
     domain->increment = increment;
 
+    return ACVP_SUCCESS;
+}
+
+/*
+ * Append a primes pre req val to the capabilities
+ */
+static ACVP_RESULT acvp_add_primes_prereq_val(ACVP_CTX *ctx, ACVP_PRIMES_CAP_MODE *primes_mode,
+                                               ACVP_PRIMES_MODE mode,
+                                               ACVP_PREREQ_ALG pre_req,
+                                               char *value) {
+    ACVP_PREREQ_LIST *prereq_entry, *prereq_entry_2;
+
+    ACVP_LOG_INFO("PRIMES mode %d", mode);
+    prereq_entry = calloc(1, sizeof(ACVP_PREREQ_LIST));
+    if (!prereq_entry) {
+        return ACVP_MALLOC_FAIL;
+    }
+    prereq_entry->prereq_alg_val.alg = pre_req;
+    prereq_entry->prereq_alg_val.val = value;
+
+    if (!primes_mode->prereq_vals) {
+        primes_mode->prereq_vals = prereq_entry;
+    } else {
+        prereq_entry_2 = primes_mode->prereq_vals;
+        while (prereq_entry_2->next) {
+            prereq_entry_2 = prereq_entry_2->next;
+        }
+        prereq_entry_2->next = prereq_entry;
+    }
+    return ACVP_SUCCESS;
+}
+
+ACVP_RESULT acvp_cap_primes_enable(ACVP_CTX *ctx,
+                                   ACVP_CIPHER cipher,
+                                   int (*crypto_handler)(ACVP_TEST_CASE *test_case)) {
+    ACVP_CAP_TYPE type = 0;
+    ACVP_RESULT result = ACVP_SUCCESS;
+
+    if (!ctx) {
+        return ACVP_NO_CTX;
+    }
+    if (!crypto_handler) {
+        ACVP_LOG_ERR("NULL parameter 'crypto_handler'");
+        return ACVP_INVALID_ARG;
+    }
+
+    switch (cipher) {
+    case ACVP_PRIMES_KEYGEN:
+    case ACVP_PRIMES_KEYVER:
+        type = ACVP_PRIMES_TYPE;
+        break;
+    default:
+        ACVP_LOG_ERR("Invalid parameter 'cipher'");
+        return ACVP_INVALID_ARG;
+    }
+
+    result = acvp_cap_list_append(ctx, type, cipher, crypto_handler);
+
+    if (result == ACVP_DUP_CIPHER) {
+        ACVP_LOG_ERR("Capability previously enabled. Duplicate not allowed.");
+    } else if (result == ACVP_MALLOC_FAIL) {
+        ACVP_LOG_ERR("Failed to allocate capability object");
+    }
+
+    return result;
+}
+
+ACVP_RESULT acvp_cap_primes_set_parm(ACVP_CTX *ctx,
+                                 ACVP_CIPHER cipher,
+                                 ACVP_PRIMES_PARAM param,
+                                 int value) {
+    ACVP_CAPS_LIST *cap;
+    ACVP_PRIMES_CAP *primes_cap;
+    ACVP_PARAM_LIST *current_group;
+
+    if (!ctx) {
+        return ACVP_NO_CTX;
+    }
+
+    switch (cipher) {
+    case ACVP_PRIMES_KEYGEN:
+    case ACVP_PRIMES_KEYVER:
+        break;
+    default:
+        ACVP_LOG_ERR("Invalid cipher");
+        return ACVP_INVALID_ARG;
+    }
+
+    cap = acvp_locate_cap_entry(ctx, cipher);
+    if (!cap) {
+        return ACVP_NO_CAP;
+    }
+
+    primes_cap = cap->cap.primes_cap;
+    if (!primes_cap) {
+        return ACVP_NO_CAP;
+    }
+
+    current_group = primes_cap->primes_cap_mode->group;
+    if (current_group) {
+        while (current_group->next) {
+            current_group = current_group->next;
+        }
+        current_group->next = calloc(1, sizeof(ACVP_PARAM_LIST));
+        current_group->next->param = value;
+    } else {
+        primes_cap->primes_cap_mode->group = calloc(1, sizeof(ACVP_PARAM_LIST));
+        primes_cap->primes_cap_mode->group->param = value;
+        
+        printf("add 1st to %p %d\n", primes_cap, value);
+        
+    }
+    
     return ACVP_SUCCESS;
 }
 

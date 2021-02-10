@@ -157,7 +157,9 @@ ACVP_ALG_HANDLER alg_tbl[ACVP_ALG_MAX] = {
     { ACVP_KAS_FFC_NOCOMP,    &acvp_kas_ffc_kat_handler,      ACVP_ALG_KAS_FFC,           ACVP_ALG_KAS_FFC_NOCOMP, ACVP_REV_KAS_FFC},
     { ACVP_KAS_FFC_SSC,       &acvp_kas_ffc_ssc_kat_handler,  ACVP_ALG_KAS_FFC_SSC,       ACVP_ALG_KAS_FFC_COMP, ACVP_REV_KAS_FFC_SSC},
     { ACVP_KAS_IFC_SSC,       &acvp_kas_ifc_ssc_kat_handler,  ACVP_ALG_KAS_IFC_SSC,       ACVP_ALG_KAS_IFC_COMP, ACVP_REV_KAS_IFC_SSC},
-    { ACVP_KTS_IFC,           &acvp_kts_ifc_kat_handler,      ACVP_ALG_KTS_IFC,           ACVP_ALG_KTS_IFC_COMP, ACVP_REV_KTS_IFC}
+    { ACVP_KTS_IFC,           &acvp_kts_ifc_kat_handler,      ACVP_ALG_KTS_IFC,           ACVP_ALG_KTS_IFC_COMP, ACVP_REV_KTS_IFC},
+    { ACVP_PRIMES_KEYGEN,     &acvp_primes_keygen_kat_handler,       ACVP_ALG_PRIMES,            ACVP_MODE_KEYGEN, ACVP_REV_PRIMES},
+    { ACVP_PRIMES_KEYVER,     &acvp_primes_keyver_kat_handler,       ACVP_ALG_PRIMES,            ACVP_MODE_KEYVER, ACVP_REV_PRIMES}
 };
 
 /*
@@ -208,6 +210,10 @@ static void acvp_free_prereqs(ACVP_CAPS_LIST *cap_list) {
     }
 }
 
+static void acvp_cap_free_primes_attrs(ACVP_CAPS_LIST *cap_list) {
+
+}
+    
 /*
  * Free Internal memory for DSA operations. Since it supports
  * multiple modes, we have to free the whole list
@@ -623,6 +629,10 @@ ACVP_RESULT acvp_free_test_session(ACVP_CTX *ctx) {
             case ACVP_DSA_TYPE:
                 acvp_cap_free_dsa_attrs(cap_entry);
                 free(cap_entry->cap.dsa_cap);
+                break;
+            case ACVP_PRIMES_TYPE:
+                acvp_cap_free_primes_attrs(cap_entry);
+                free(cap_entry->cap.primes_cap);
                 break;
             case ACVP_KAS_ECC_CDH_TYPE:
             case ACVP_KAS_ECC_COMP_TYPE:

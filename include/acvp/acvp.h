@@ -169,6 +169,8 @@ typedef enum acvp_cipher {
     ACVP_KAS_FFC_SSC,
     ACVP_KAS_IFC_SSC,
     ACVP_KTS_IFC,
+    ACVP_PRIMES_KEYGEN,
+    ACVP_PRIMES_KEYVER,
     ACVP_CIPHER_END
 } ACVP_CIPHER;
 
@@ -1636,6 +1638,58 @@ typedef struct acvp_drbg_tc_t {
     unsigned int drb_len;              /**< Expected drb length (in bytes) */
 } ACVP_DRBG_TC;
 
+    
+/*! @struct ACVP_PRIMES_PARAM */
+typedef enum acvp_primes_param {
+    ACVP_PRIMES_GROUP = 1
+} ACVP_PRIMES_PARAM;
+
+/*! @struct ACVP_PRIMES_GROUP */
+typedef enum acvp_primes_group {
+    ACVP_PRIMES_GROUP_MODP_2048 = 1,
+    ACVP_PRIMES_GROUP_MODP_3072,
+    ACVP_PRIMES_GROUP_MODP_4096,
+    ACVP_PRIMES_GROUP_MODP_6144,
+    ACVP_PRIMES_GROUP_MODP_8192,
+    ACVP_PRIMES_GROUP_FFDHE_2048,
+    ACVP_PRIMES_GROUP_FFDHE_3072,
+    ACVP_PRIMES_GROUP_FFDHE_4096,
+    ACVP_PRIMES_GROUP_FFDHE_6144,
+    ACVP_PRIMES_GROUP_FFDHE_8192
+} ACVP_PRIMES_GROUPS;
+
+/*! @struct ACVP_PRIMES_TEST_TYPE */
+typedef enum acvp_primes_mode {
+    ACVP_PRIMES_MODE_KEYGEN = 1,
+    ACVP_PRIMES_MODE_KEYVER,
+    ACVP_PRIMES_MAX_MODES
+} ACVP_PRIMES_MODE;
+
+/*! @struct ACVP_KAS_ECC_TEST_TYPE */
+typedef enum acvp_primes_test_type {
+    ACVP_PRIMES_TT_AFT = 1,
+    ACVP_PRIMES_TT_VAL
+} ACVP_PRIMES_TEST_TYPE;
+
+/*!
+ * @struct ACVP_PRIMES_TC
+ * @brief This struct holds data that represents a single test
+ * case for PRIMES testing.  This data is
+ * passed between libacvp and the crypto module.
+ */
+/*! @struct ACVP_PRIMES_TC */
+typedef struct acvp_primes_tc_t {
+    ACVP_PRIMES_MODE mode;
+    ACVP_PRIMES_TEST_TYPE test_type;
+    ACVP_PRIMES_GROUPS safePrimeGroup;
+    const char *safePrimeGroupString;
+    int passed;
+    unsigned char *x;
+    unsigned char *y;
+    int xlen;
+    int ylen;
+} ACVP_PRIMES_TC;
+
 /*!
  * @struct ACVP_TEST_CASE
  * @brief This is the abstracted test case representation used for
@@ -1671,6 +1725,7 @@ typedef struct acvp_test_case_t {
         ACVP_KAS_FFC_TC *kas_ffc;
         ACVP_KAS_IFC_TC *kas_ifc;
         ACVP_KTS_IFC_TC *kts_ifc;
+        ACVP_PRIMES_TC *primes;
     } tc;
 } ACVP_TEST_CASE;
 
@@ -1950,6 +2005,17 @@ ACVP_RESULT acvp_cap_dsa_set_parm(ACVP_CTX *ctx,
                                   ACVP_DSA_PARM param,
                                   int value);
 
+/* Primes enable/set cap */
+    
+ACVP_RESULT acvp_cap_primes_enable(ACVP_CTX *ctx,
+                                   ACVP_CIPHER cipher,
+                                   int (*crypto_handler)(ACVP_TEST_CASE *test_case));
+
+ACVP_RESULT acvp_cap_primes_set_parm(ACVP_CTX *ctx,
+                                     ACVP_CIPHER cipher,
+                                     ACVP_PRIMES_PARAM param,
+                                     int value);
+    
 /*! @brief acvp_enable_kas_ecc_cap()
 
    This function should be used to enable KAS-ECC capabilities. Specific modes

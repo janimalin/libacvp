@@ -2195,6 +2195,99 @@ static ACVP_RESULT acvp_build_dsa_register_cap(JSON_Object *cap_obj,
     return ACVP_SUCCESS;
 }
 
+static ACVP_RESULT acvp_build_primes_keyxxx_register(JSON_Array *garray,
+                                                     ACVP_CAPS_LIST *cap_entry,
+                                                     ACVP_PRIMES_CAP_MODE *primes_cap_mode) {
+    ACVP_PARAM_LIST *current_group = NULL;
+    current_group = primes_cap_mode->group;
+
+    while (current_group) {        
+        switch (current_group->param) {
+         case ACVP_PRIMES_GROUP_MODP_2048:
+            json_array_append_string(garray, "MODP-2048");
+            break;
+         case ACVP_PRIMES_GROUP_MODP_3072:
+            json_array_append_string(garray, "MODP-3072");
+            break;
+         case ACVP_PRIMES_GROUP_MODP_4096:
+            json_array_append_string(garray, "MODP-4096");
+            break;
+         case ACVP_PRIMES_GROUP_MODP_6144:
+            json_array_append_string(garray, "MODP-6144");
+            break;
+         case ACVP_PRIMES_GROUP_MODP_8192:
+            json_array_append_string(garray, "MODP-8192");
+            break;
+         case ACVP_PRIMES_GROUP_FFDHE_2048:
+            json_array_append_string(garray, "ffdhe2048");
+            break;
+         case ACVP_PRIMES_GROUP_FFDHE_3072:
+            json_array_append_string(garray, "ffdhe3072");
+            break;
+         case ACVP_PRIMES_GROUP_FFDHE_4096:
+            json_array_append_string(garray, "ffdhe4096");
+            break;
+         case ACVP_PRIMES_GROUP_FFDHE_6144:
+            json_array_append_string(garray, "ffdhe6144");
+            break;
+         case ACVP_PRIMES_GROUP_FFDHE_8192:
+            json_array_append_string(garray, "ffdhe8192");
+            break;
+         default:            
+            return ACVP_NO_CAP;
+        }
+        current_group = current_group->next;
+    }
+
+    return ACVP_SUCCESS;
+}
+
+static ACVP_RESULT acvp_build_primes_register_cap(ACVP_CTX *ctx,
+                                                  JSON_Object *cap_obj,
+                                                  ACVP_CAPS_LIST *cap_entry)
+{
+    ACVP_RESULT result;
+    JSON_Array *meth_array = NULL;
+    const char *revision = NULL;
+
+    if (!cap_entry->cap.primes_cap) {
+        return ACVP_NO_CAP;
+    }
+    json_object_set_string(cap_obj, "algorithm", "safePrimes");
+
+    revision = acvp_lookup_cipher_revision(cap_entry->cipher);
+    if (revision == NULL) return ACVP_INVALID_ARG;
+    json_object_set_string(cap_obj, "revision", revision);
+
+    ACVP_PRIMES_CAP_MODE *mode = cap_entry->cap.primes_cap->primes_cap_mode;
+    switch (mode->cap_mode) {
+    case ACVP_PRIMES_MODE_KEYGEN:
+        json_object_set_string(cap_obj, "mode", "keyGen");
+        break;
+    case ACVP_PRIMES_MODE_KEYVER:
+        json_object_set_string(cap_obj, "mode", "keyVer");
+        break;
+    default:
+        return ACVP_INVALID_ARG;
+    }
+    result = acvp_lookup_prereqVals(cap_obj, cap_entry);
+    if (result != ACVP_SUCCESS) { return result; }
+
+    json_object_set_value(cap_obj, "safePrimeGroups", json_value_init_array());
+    meth_array = json_object_get_array(cap_obj, "safePrimeGroups");
+
+    switch (mode->cap_mode) {
+    case ACVP_PRIMES_MODE_KEYGEN:
+    case ACVP_PRIMES_MODE_KEYVER:
+        result = acvp_build_primes_keyxxx_register(meth_array, cap_entry, mode);
+        if (result != ACVP_SUCCESS) { return result; }
+        break; 
+   default:
+        return ACVP_NO_CAP;
+    }
+    return ACVP_SUCCESS;
+}
+
 static ACVP_RESULT acvp_lookup_kas_ecc_prereqVals(JSON_Object *cap_obj,
                                                   ACVP_KAS_ECC_CAP_MODE *kas_ecc_mode) {
     JSON_Array *prereq_array = NULL;
@@ -2439,8 +2532,8 @@ static ACVP_RESULT acvp_build_kas_ecc_register_cap(ACVP_CTX *ctx,
                      json_object_set_string(cap_obj, "hashFunctionZ", "SHA2-512");
                      break;
                 default:
-                    ACVP_LOG_ERR("Unsupported KAS-ECC sha param %d", kas_ecc_mode->hash);
-                    return ACVP_INVALID_ARG;
+                    //ACVP_LOG_ERR("Unsupported KAS-ECC sha param %d", kas_ecc_mode->hash);
+                    //return ACVP_INVALID_ARG;
                     break;
             }
             break;
@@ -2518,8 +2611,8 @@ static ACVP_RESULT acvp_build_kas_ecc_register_cap(ACVP_CTX *ctx,
                             json_array_append_string(temp_arr, "SHA2-512");
                             break;
                         default:
-                            ACVP_LOG_ERR("Unsupported KAS-ECC sha param %d", sha->param);
-                            return ACVP_INVALID_ARG;
+                            //ACVP_LOG_ERR("Unsupported KAS-ECC sha param %d", sha->param);
+                            //return ACVP_INVALID_ARG;
 
                             break;
                         }
@@ -2789,8 +2882,8 @@ static ACVP_RESULT acvp_build_kas_ffc_register_cap(ACVP_CTX *ctx,
                             json_array_append_string(temp_arr, "SHA2-512");
                             break;
                         default:
-                            ACVP_LOG_ERR("Unsupported KAS-FFC sha param %d", sha->param);
-                            return ACVP_INVALID_ARG;
+                            //ACVP_LOG_ERR("Unsupported KAS-FFC sha param %d", sha->param);
+                            //return ACVP_INVALID_ARG;
 
                             break;
                         }
@@ -3572,6 +3665,10 @@ ACVP_RESULT acvp_build_test_session(ACVP_CTX *ctx, char **reg, int *out_len) {
                 break;
             case ACVP_KTS_IFC:
                 rv = acvp_build_kts_ifc_register_cap(ctx, cap_obj, cap_entry);
+                break;
+            case ACVP_PRIMES_KEYGEN:
+            case ACVP_PRIMES_KEYVER:
+                rv = acvp_build_primes_register_cap(ctx, cap_obj, cap_entry);
                 break;
            case ACVP_CIPHER_START:
            case ACVP_TDES_CBCI:

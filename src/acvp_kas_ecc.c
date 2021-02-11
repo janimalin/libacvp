@@ -135,14 +135,14 @@ static ACVP_RESULT acvp_kas_ecc_output_comp_tc(ACVP_CTX *ctx,
         json_object_set_string(tc_rsp, "hashZIut", tmp);
     }
 
-    if (hasReplyHash && stc->zlen > 0) {
+    if (!hasReplyHash && stc->zlen > 0) {
         memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
         rv = acvp_bin_to_hexstr(stc->z, stc->zlen, tmp, ACVP_KAS_ECC_STR_MAX);
         if (rv != ACVP_SUCCESS) {
             ACVP_LOG_ERR("hex conversion failure (Z)");
             goto end;
         }
-        json_object_set_string(tc_rsp, "ZIut", tmp);
+        json_object_set_string(tc_rsp, "z", tmp);
     }
 
 end:
@@ -1032,14 +1032,14 @@ static ACVP_RESULT acvp_kas_ecc_output_ssc_tc(ACVP_CTX *ctx,
         json_object_set_string(tc_rsp, "hashZIut", tmp);
     }
 
-    if (hasReplyHash && stc->zlen > 0) {
+    if (!hasReplyHash && stc->zlen > 0) {
         memzero_s(tmp, ACVP_KAS_ECC_STR_MAX);
         rv = acvp_bin_to_hexstr(stc->z, stc->zlen, tmp, ACVP_KAS_ECC_STR_MAX);
         if (rv != ACVP_SUCCESS) {
             ACVP_LOG_ERR("hex conversion failure (Z)");
             goto end;
         }
-        json_object_set_string(tc_rsp, "ZIut", tmp);
+        json_object_set_string(tc_rsp, "z", tmp);
     }
 
 end:

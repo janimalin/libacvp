@@ -339,6 +339,8 @@ int app_ecdsa_handler(ACVP_TEST_CASE *test_case) {
         BN_bin2bn(tc->r, tc->r_len, r);
         BN_bin2bn(tc->s, tc->s_len, s);
 
+        printf("lens %d qx:%d r:%d msglen:%d\n", nid, tc->qx_len, tc->r_len, tc->msg_len);
+        
         key = EC_KEY_new_by_curve_name(nid);
         if (!key) {
             printf("Failed to instantiate ECDSA key\n");

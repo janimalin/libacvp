@@ -1029,7 +1029,7 @@ static ACVP_RESULT acvp_kas_ecc_output_ssc_tc(ACVP_CTX *ctx,
             ACVP_LOG_ERR("hex conversion failure (hashZ)");
             goto end;
         }
-        json_object_set_string(tc_rsp, "hashZIut", tmp);
+        json_object_set_string(tc_rsp, "hashZ", tmp);
     }
 
     if (!hasReplyHash && stc->zlen > 0) {

@@ -1268,7 +1268,7 @@ static ACVP_RESULT acvp_validate_sym_cipher_parm_value(ACVP_CIPHER cipher, ACVP_
         case ACVP_KDF108:
         case ACVP_PBKDF:
         case ACVP_PRIMES_KEYGEN:
-         case ACVP_PRIMES_KEYVER:
+        case ACVP_PRIMES_KEYVER:
         case ACVP_KAS_ECC_CDH:
         case ACVP_KAS_ECC_COMP:
         case ACVP_KAS_ECC_NOCOMP:
@@ -6536,7 +6536,7 @@ static ACVP_RESULT acvp_add_primes_prereq_val(ACVP_CTX *ctx, ACVP_PRIMES_CAP_MOD
                                                char *value) {
     ACVP_PREREQ_LIST *prereq_entry, *prereq_entry_2;
 
-    ACVP_LOG_INFO("PRIMES mode %d", mode);
+    ACVP_LOG_INFO("PRIMES mode: %d added", mode);
     prereq_entry = calloc(1, sizeof(ACVP_PREREQ_LIST));
     if (!prereq_entry) {
         return ACVP_MALLOC_FAIL;
@@ -6598,6 +6598,7 @@ ACVP_RESULT acvp_cap_primes_set_parm(ACVP_CTX *ctx,
     ACVP_CAPS_LIST *cap;
     ACVP_PRIMES_CAP *primes_cap;
     ACVP_PARAM_LIST *current_group;
+    ACVP_PRIMES_MODE mode;
 
     if (!ctx) {
         return ACVP_NO_CTX;
@@ -6605,7 +6606,10 @@ ACVP_RESULT acvp_cap_primes_set_parm(ACVP_CTX *ctx,
 
     switch (cipher) {
     case ACVP_PRIMES_KEYGEN:
+        mode = ACVP_PRIMES_MODE_KEYGEN;
+        break;
     case ACVP_PRIMES_KEYVER:
+        mode = ACVP_PRIMES_MODE_KEYVER;
         break;
     default:
         ACVP_LOG_ERR("Invalid cipher");
@@ -6621,6 +6625,7 @@ ACVP_RESULT acvp_cap_primes_set_parm(ACVP_CTX *ctx,
     if (!primes_cap) {
         return ACVP_NO_CAP;
     }
+    primes_cap->primes_cap_mode->cap_mode = mode;
 
     current_group = primes_cap->primes_cap_mode->group;
     if (current_group) {
